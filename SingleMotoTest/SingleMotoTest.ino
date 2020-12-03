@@ -1,10 +1,9 @@
-#define digitalPinToInterrupt(x) x // FIXME: FIND A REASON WHY ARDUINO THINK THIS DO NOT EXIST
-
-
 //=================================================================================================
 //                                     INTERRUPT HANDLING
 //=================================================================================================
 #define INTERRUPT_COUNT 2
+
+class InterruptHandler;
 
 class InterruptHandler{
 public:
