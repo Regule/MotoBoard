@@ -1,20 +1,20 @@
+#define SERIAL_BAUD_RATE 9600
+
 //=================================================================================================
 //                                     INTERRUPT HANDLING
 //=================================================================================================
 #define INTERRUPT_COUNT 2
 
-class InterruptHandler;
-
 class InterruptHandler{
 public:
-	virtual void operator() () = 0;	
+	virtual void handle_interrupt() = 0;	
 };
 
 
 class DefaultHandler: public InterruptHandler{
 public:
-	void operator() (){
-		// Do nothing, add some debug Serial.print if needed
+	void handle_interrupt(){
+		Serial.println("Default interrupt handler called.");
 	}
 };
 
@@ -22,8 +22,8 @@ public:
 DefaultHandler default_handler;
 InterruptHandler* interrupt_handlers[INTERRUPT_COUNT];
 
-void irs_0(){interrupt_handlers[0];}
-void irs_1(){interrupt_handlers[1];}
+void irs_0(){Serial.print("WTF");interrupt_handlers[0]->handle_interrupt();}
+void irs_1(){interrupt_handlers[1]->handle_interrupt();}
 
 void(* irs_functions[])() = {irs_0, irs_1};
 
@@ -66,7 +66,7 @@ public:
 		assign_interrupt_handler(digitalPinToInterrupt(pin_impulse), this, RISING);
 	}
 
-	void operator() (){
+	void handle_interrupt(){
 	}
 };
 
@@ -90,6 +90,7 @@ private:
 //=================================================================================================
 
 void setup(){
+	Serial.begin(SERIAL_BAUD_RATE);
 	initialize_interrupt_handlers();
 }
 
