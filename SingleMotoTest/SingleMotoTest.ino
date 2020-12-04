@@ -69,6 +69,20 @@ public:
 		forward = true;
 	}
 
+	Movement(double velocity){
+		if(velocity < 0){
+			this->velocity = 0 - velocity;
+			this->forward = false;
+		}else{
+			this->velocity = velocity;
+			this->forward = true;
+		}
+	}
+
+	double to_double(){
+		return forward?velocity:0-velocity;
+	}
+
 	Movement(double velocity, bool forward){
 		this->velocity = velocity;
 		this->forward = forward;
@@ -132,13 +146,59 @@ public:
 //=================================================================================================
 //                                          MOTOR CLASS 
 //=================================================================================================
+#define DIRECTION_FORWARD 0
+#define DIRECTION_REVERSE 1
+#define DIRECTION_STOP 2
+
 class Motor{
 
 private:
 	int pin_direction_forward;
 	int pin_direction_reverse;
 	int pin_pwm;
+
+public:
 	
+	Motor(int pin_direction_forward, int pin_direction_reverse, int pin_pwm){
+		pinMode(pin_direction_forward, OUTPUT);
+		pinMode(pin_direction_reverse, OUTPUT);
+		pinMode(pin_pwm, OUTPUT);
+		digitalWrite(pin_direction_forward, LOW);
+		digitalWrite(pin_direction_reverse, LOW);
+		analogWrite(pin_pwm, 0);
+		this->pin_direction_forward = pin_direction_forward;
+		this->pin_direction_reverse = pin_direction_reverse;
+		this->pin_pwm = pin_pwm;
+	}
+
+	void set_pwm(int pwm){
+		analogWrite(pin_pwm, pwm);
+	}
+
+	void set_direction(int direction){
+		switch(direction){
+			case DIRECTION_FORWARD:
+				digitalWrite(pin_direction_forward, HIGH);
+				digitalWrite(pin_direction_reverse, LOW);
+				break;
+			case DIRECTION_REVERSE:
+				digitalWrite(pin_direction_forward, LOW);
+				digitalWrite(pin_direction_reverse, HIGH);
+				break;
+			case DIRECTION_STOP: 
+				// If default behaviour changes remember to write stop behaviour here instead
+			default:
+				digitalWrite(pin_direction_forward, HIGH);
+				digitalWrite(pin_direction_reverse, HIGH);
+				digitalWrite(pin_pwm,LOW);
+		}
+	}
+
+	void emergency_break(){
+		digitalWrite(pin_direction_forward, HIGH);
+		digitalWrite(pin_direction_reverse, HIGH);
+		digitalWrite(pin_pwm, HIGH);
+	}	
 
 };
 
@@ -160,6 +220,10 @@ void simple_encoder_test(){
 		encoder.get_movement().send_as_ascii();
 		Serial.println();
 	}
+}
+
+void simple_motor_test(){
+	Motor motor(3, 4, 5);
 }
 
 void loop(){
