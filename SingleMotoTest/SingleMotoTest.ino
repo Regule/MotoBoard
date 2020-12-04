@@ -25,7 +25,7 @@ public:
 class DefaultHandler: public InterruptHandler{
 public:
 	void handle_interrupt(){
-		Serial.println("Default interrupt handler called.");
+		//Serial.println("Default interrupt handler called.");
 	}
 };
 
