@@ -1,4 +1,14 @@
+
+//------------------------------------GENERAL CONFIGURATION----------------------------------------
 #define SERIAL_BAUD_RATE 9600
+#define ODOMETRY_CHECK_INTERVAL 100 // in milisceonds
+#define VELOCITY_MEASURE_INTERVAL 100 //in miliseconds
+
+//----------------------------------ROBOT PHYSICAL PROPERTIES--------------------------------------
+#define INTERRUPTS_TO_MM 0.615998
+#define ROBOT_WIDTH 295
+#define LIN_DISPLACEMENT_RATIO INTERRUPTS_TO_MM / 2
+#define THETA_RATIO INTERRUPTS_TO_MM / ROBOT_WIDTH
 
 //=================================================================================================
 //                                     INTERRUPT HANDLING
