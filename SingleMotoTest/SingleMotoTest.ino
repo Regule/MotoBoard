@@ -50,6 +50,25 @@ void assign_interrupt_handler(int interrupt_id, InterruptHandler* handler, int m
 }
 
 
+//=================================================================================================
+//                                         MOVEMENT CLASS
+//=================================================================================================
+class Movement{
+public:
+	double velocity;
+	bool forward;
+
+	Movement(){
+		velocity = 0.0;
+		forward = false;
+	}
+
+	Movement(double velocity, bool forward){
+		this->velocity = velocity;
+		this->forward = forward;
+	}
+};
+
 
 //=================================================================================================
 //                                         ENCODER CLASS 
@@ -59,27 +78,37 @@ class Encoder: public InterruptHandler{
 private:
 	int pin_impulse;
 	int pin_direction;
-	unsigned long impule_count;
+	unsigned long impulse_count;
 	unsigned long timestamp;
-	double velocity;
+	Movement movement;
 
 public:
 
 	Encoder(int pin_impulse, int pin_direction){
 		this->pin_impulse = pin_impulse;
 		this->pin_direction = pin_direction;
-		this->impule_count = 0;
+		this->impulse_count = 0;
 		this->timestamp = millis();
-		this->velocity = 0; 
 		pinMode(pin_impulse, INPUT);
 		pinMode(pin_direction, INPUT);
 		assign_interrupt_handler(digitalPinToInterrupt(pin_impulse), this, RISING);
 	}
 
 	void handle_interrupt(){
+		impulse_count++;
+		movement.forward = digitalRead(pin_direction); 
+	}
+
+	void update_velocity_data(){
+		unsigned long now = millis();
+		movement.velocity = (double)(impulse_count)*INTERRUPTS_TO_MM / (now-timestamp);
+		timestamp = now;
+	}
+
+	Movement get_movement(){
+		return this->movement;
 	}
 };
-
 
 
 //=================================================================================================
