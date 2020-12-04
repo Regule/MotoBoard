@@ -224,16 +224,45 @@ void simple_encoder_test(){
 
 void simple_motor_test(){
 	Motor motor(3, 4, 5);
+	while(true){
+		Serial.println("Select mode : ");
+		Serial.println("1 - Move");
+		Serial.println("2 - Normal stop");
+		Serial.println("3 - Emergency break");
+		while(Serial.available()==0){
+		}
+		int choice = Serial.parseInt();
+		if(choice == 1){
+			Serial.println("Select direction:");
+			Serial.println("0 - forward");
+			Serial.println("1 - reverse");
+			while(Serial.available() == 0){
+			}
+			int direction = Serial.parseInt();
+			Serial.println("Enter pwm");
+			while(Serial.available() == 0){
+			}
+			int pwm = Serial.parseInt();
+			motor.set_direction(direction);
+			motor.set_pwm(pwm);
+		}else if(choice == 2){
+			motor.set_direction(DIRECTION_STOP);
+		}else{
+			motor.emergency_break();
+		}
+	}
 }
 
 void loop(){
 	Serial.println("Select test :");
 	Serial.println("1 - Simple encoder test");
+	Serial.println("2 - Simple motor test");
 	while(Serial.available()==0){
 	}
 	int selection = Serial.parseInt();
 	switch(selection){
 		case 1: simple_encoder_test();break;
+		case 2: simple_motor_test();break;
 		default: Serial.println("Test do not exist.");break;
 	}
 }
