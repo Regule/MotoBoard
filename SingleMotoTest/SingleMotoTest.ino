@@ -11,6 +11,7 @@
 #define LIN_DISPLACEMENT_RATIO INTERRUPTS_TO_MM / 2
 #define THETA_RATIO INTERRUPTS_TO_MM / ROBOT_WIDTH
 
+
 //=================================================================================================
 //                                     INTERRUPT HANDLING
 //=================================================================================================
@@ -56,6 +57,21 @@ void initialize_interrupt_handlers(){
 		assign_interrupt_handler(i, &default_handler, RISING);
 	}
 }
+
+
+//=================================================================================================
+//                                       SERIAL SUPPORT
+//=================================================================================================
+
+int int_from_serial(){
+	while(Serial.available() == 0){
+	}
+	int i = Serial.parseInt();
+	while(Serial.available()){
+		Serial.read();
+	}
+}
+
 //=================================================================================================
 //                                         MOVEMENT CLASS
 //=================================================================================================
@@ -229,20 +245,14 @@ void simple_motor_test(){
 		Serial.println("1 - Move");
 		Serial.println("2 - Normal stop");
 		Serial.println("3 - Emergency break");
-		while(Serial.available()==0){
-		}
-		int choice = Serial.parseInt();
+		int choice = int_from_serial();
 		if(choice == 1){
 			Serial.println("Select direction:");
 			Serial.println("0 - forward");
 			Serial.println("1 - reverse");
-			while(Serial.available() == 0){
-			}
-			int direction = Serial.parseInt();
+			int direction = int_from_serial();
 			Serial.println("Enter pwm");
-			while(Serial.available() == 0){
-			}
-			int pwm = Serial.parseInt();
+			int pwm = int_from_serial();
 			motor.set_direction(direction);
 			motor.set_pwm(pwm);
 		}else if(choice == 2){
@@ -257,9 +267,7 @@ void loop(){
 	Serial.println("Select test :");
 	Serial.println("1 - Simple encoder test");
 	Serial.println("2 - Simple motor test");
-	while(Serial.available()==0){
-	}
-	int selection = Serial.parseInt();
+	int selection = int_from_serial(); 
 	switch(selection){
 		case 1: simple_encoder_test();break;
 		case 2: simple_motor_test();break;
