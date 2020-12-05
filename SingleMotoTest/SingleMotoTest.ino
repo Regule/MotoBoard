@@ -205,9 +205,13 @@ public:
 			case DIRECTION_STOP: 
 				// If default behaviour changes remember to write stop behaviour here instead
 			default:
+				// TODO: THIS (COMMENTED PART) DO NOT WORK AS INTENDED, FIND OUT WHY
+				//digitalWrite(pin_direction_forward, HIGH);
+				//digitalWrite(pin_direction_reverse, HIGH);
+				//analogWrite(pin_pwm, 0);
 				digitalWrite(pin_direction_forward, HIGH);
 				digitalWrite(pin_direction_reverse, HIGH);
-				digitalWrite(pin_pwm,LOW);
+				digitalWrite(pin_pwm, HIGH);
 		}
 	}
 
