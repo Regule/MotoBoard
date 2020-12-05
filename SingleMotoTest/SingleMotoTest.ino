@@ -177,6 +177,12 @@ public:
 #define DIRECTION_REVERSE 1
 #define DIRECTION_STOP 2
 
+
+class MotorCmd{
+
+};
+
+
 class Motor{
 
 private:
@@ -342,6 +348,10 @@ public:
 		this->settings = settings;
 	}
 
+	void set_target(double target){
+		this->target = target;
+	}
+
 	void force_stop(){
 		target = 0;
 		response = 0;
@@ -443,6 +453,7 @@ void pid_test(){
 	Serial.println("From now on you can enter target speed into serial port");
 	Serial.println("In response a nonstop stream of encoder readouts will show up");	
 	target = double_from_serial();
+	controller.set_target(target);
 	while(true){
 		delay(ODOMETRY_UPDATE_PERIOD);
 		encoder.update_velocity_data();
@@ -451,9 +462,11 @@ void pid_test(){
 		motor.set_pwm(controller.get_response()); // FIXME: Motor should be set with pwm/dir
 		                                          //        at this time this can be negative
 		encoder.get_movement().send_as_ascii();
-		Serial.println();
+		Serial.print(" response=");
+		Serial.println(controller.get_response());
 		if(Serial.available()){
 			target = double_from_serial();
+			controller.set_target(target);
 		}
 	}
 }
