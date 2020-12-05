@@ -73,6 +73,16 @@ int int_from_serial(){
 	return i;
 }
 
+double double_from_serial(){
+	while(Serial.available() == 0){
+	}
+	double f = Serial.parseFloat();
+	while(Serial.available()){
+		Serial.read();
+	}
+	return f;
+}
+
 //=================================================================================================
 //                                         MOVEMENT CLASS
 //=================================================================================================
@@ -189,7 +199,7 @@ public:
 	}
 
 	void set_pwm(int pwm){
-		analogWrite(pin_pwm, pwm);
+		analogWrite(pin_pwm, pwm<0?0:pwm>255?255:pwm);
 	}
 
 	void set_direction(int direction){
@@ -296,15 +306,60 @@ private:
 	Derivative derivative;
 	Integral integral;
 	PIDsettings settings;
+	double target;
+	double response;
+	bool locked;
 
 public:
 	
 	PIDcontroller(){
+		target = 0;
+		response = 0;
+		locked = false;
 	}
 
 	PIDcontroller(double p, double i, double d){
 		settings = PIDsettings(p, i, d);
+		target = 0;
+		response = 0;
+		locked = false;
 	}
+
+	bool update(double readout){
+		if(locked){
+			return false;
+		}
+		double error = target - readout;
+		derivative.update(error);
+		integral.update(error);
+		response += settings.p*error;
+		response += settings.i*integral.get_value();
+		response += settings.d*derivative.get_value();
+		return true;
+	}
+
+	void change_settings(PIDsettings settings){
+		this->settings = settings;
+	}
+
+	void force_stop(){
+		target = 0;
+		response = 0;
+		locked = true;
+	}
+
+	void reset(){
+		locked = false;
+	}
+	
+	bool is_locked(){
+		return locked;
+	}
+
+	double get_response(){
+		return response;
+	}
+
 };
 
 
@@ -372,16 +427,49 @@ void test_readouts_for_pid(){
 	}
 }
 
+void pid_test(){
+	Encoder encoder(2,4);
+	Motor motor(5, 6, 7);
+	double p,i,d;
+	double target;
+	Serial.println("Configure PID controller.");
+	Serial.println("What value should be assigned to proportional gain ?");
+	p = double_from_serial();
+	Serial.println("What value should be assigned to integral gain ?");
+	i = double_from_serial();
+	Serial.println("What value should be assigned to derivative gain ?");
+	d = double_from_serial();
+	PIDcontroller controller(p, i, d);
+	Serial.println("From now on you can enter target speed into serial port");
+	Serial.println("In response a nonstop stream of encoder readouts will show up");	
+	target = double_from_serial();
+	while(true){
+		delay(ODOMETRY_UPDATE_PERIOD);
+		encoder.update_velocity_data();
+		double velocity = encoder.get_movement().to_double();
+		controller.update(velocity);
+		motor.set_pwm(controller.get_response()); // FIXME: Motor should be set with pwm/dir
+		                                          //        at this time this can be negative
+		encoder.get_movement().send_as_ascii();
+		Serial.println();
+		if(Serial.available()){
+			target = double_from_serial();
+		}
+	}
+}
+
 void loop(){
 	Serial.println("Select test :");
 	Serial.println("1 - Simple encoder test");
 	Serial.println("2 - Simple motor test");
 	Serial.println("3 - Test readouts for PID");
+	Serial.println("4 - Test PID");
 	int selection = int_from_serial(); 
 	switch(selection){
 		case 1: simple_encoder_test();break;
 		case 2: simple_motor_test();break;
 		case 3: test_readouts_for_pid();break;
+		case 4: pid_test();break;
 		default: Serial.println("Test do not exist.");break;
 	}
 }
