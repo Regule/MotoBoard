@@ -224,6 +224,91 @@ public:
 };
 
 //=================================================================================================
+//                                       PID CONTROLLER
+//=================================================================================================
+
+class Derivative{
+
+private:
+	double previous_signal_value;
+	double derivative_value;
+
+public:
+	Derivative(){
+		previous_signal_value = 0;
+		derivative_value = 0;
+	}
+
+	void update(double signal_value){
+		derivative_value = signal_value - previous_signal_value;
+		previous_signal_value = signal_value;
+	}
+
+	double get_value(){
+		return derivative_value;
+	}
+};
+
+
+class Integral{
+
+private:
+	double value;
+
+public:
+	Integral(){
+		value = 0;
+	}
+
+	void update(double signal_value){
+		value += signal_value;
+	}
+
+	double get_value(){
+		return value;
+	}
+};
+
+
+class PIDsettings{
+public:
+	double p;
+	double i;
+	double d;
+
+	PIDsettings(){
+		p=1;
+		i=0;
+		d=0;
+	}
+
+	PIDsettings(double p, double i, double d){
+		this->p = p;
+		this->i = i;
+		this->d = d;
+	}
+};
+
+
+class PIDcontroller{
+
+private:
+	Derivative derivative;
+	Integral integral;
+	PIDsettings settings;
+
+public:
+	
+	PIDcontroller(){
+	}
+
+	PIDcontroller(double p, double i, double d){
+		settings = PIDsettings(p, i, d);
+	}
+};
+
+
+//=================================================================================================
 //                                       TESTS AND DEBUG
 //=================================================================================================
 #ifdef DEBUG_MODE
@@ -268,14 +353,35 @@ void simple_motor_test(){
 	}
 }
 
+void test_readouts_for_pid(){
+	Encoder encoder(2,4);
+	Derivative derivative;
+	Integral integral;
+	while(true){
+		delay(ODOMETRY_UPDATE_PERIOD);
+		encoder.update_velocity_data();
+		double velocity = encoder.get_movement().to_double();
+		derivative.update(velocity);
+		integral.update(velocity); 
+		Serial.print("Velocity=");
+		Serial.print(velocity);
+		Serial.print(" Integral=");
+		Serial.print(integral.get_value());
+		Serial.print(" Derivative=");
+		Serial.println(derivative.get_value());
+	}
+}
+
 void loop(){
 	Serial.println("Select test :");
 	Serial.println("1 - Simple encoder test");
 	Serial.println("2 - Simple motor test");
+	Serial.println("3 - Test readouts for PID");
 	int selection = int_from_serial(); 
 	switch(selection){
 		case 1: simple_encoder_test();break;
 		case 2: simple_motor_test();break;
+		case 3: test_readouts_for_pid();break;
 		default: Serial.println("Test do not exist.");break;
 	}
 }
