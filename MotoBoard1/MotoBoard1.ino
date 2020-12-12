@@ -243,23 +243,39 @@ void loop(){
 	Encoder encoder_left(PIN_ENCODER_LEFT_IMPULSE, PIN_ENCODER_LEFT_DIRECTION);
 	Encoder encoder_right(PIN_ENCODER_RIGHT_IMPULSE, PIN_ENCODER_RIGHT_DIRECTION);
 
+	motor_left.set_direction(DIRECTION_FORWARD);
+	motor_right.set_direction(DIRECTION_FORWARD);
 	// Actual loop
 	while(true){
 		if(Serial.available()){
 			int cmd_char = Serial.read();
-			switch(cmd_char){
-				case COMMAND_WRITE:
-				Serial.println("Recieved write command");
+			//Serial.print("Command code = ");
+			//Serial.println(cmd_char);
+			if(cmd_char == COMMAND_WRITE){
+				//Serial.println("Recieved write command");
+				int dir_left = Serial.parseInt();
+				Serial.read();
 				int pwm_left = Serial.parseInt();
+				Serial.read();
+				int dir_right = Serial.parseInt();
 				Serial.read();
 				int pwm_right = Serial.parseInt();
 				Serial.print("Setting pwm, left=");
 				Serial.print(pwm_left, DEC);
 				Serial.print(" right=");
 				Serial.println(pwm_right);
+				motor_left.set_direction(dir_left);
+				motor_right.set_direction(dir_right);
 				motor_left.set_pwm(pwm_left);
 				motor_right.set_pwm(pwm_right);
-				break; 
+			}else if(cmd_char == COMMAND_READ){
+				Serial.print(encoder_left.get_movement().to_double());
+				Serial.print(SERIAL_SEPARATOR);
+				Serial.println(encoder_right.get_movement().to_double());
+			}else{
+				//Serial.print("Unknown command code \"");
+				//Serial.write(cmd_char);
+				//Serial.println("\"");
 			}
 		}
 	}
