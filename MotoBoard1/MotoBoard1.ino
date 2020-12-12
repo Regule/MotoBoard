@@ -46,7 +46,9 @@
 #define DIRECTION_FORWARD 0
 #define DIRECTION_REVERSE 1
 #define DIRECTION_STOP 2
-
+#define COMMAND_WRITE '>'
+#define COMMAND_READ '<'
+#define COMMAND_RESET 'r'
 
 //=================================================================================================
 //                                     INTERRUPT HANDLING
@@ -227,10 +229,38 @@ public:
 //                               SETUP-LOOP + SERIAL HANDLING
 //=================================================================================================
 
-void setup(){
+int int_from_serial(){
+	while(Serial.available() == 0){
+	}
+	int i = Serial.parseInt();
+	while(Serial.available()){
+		Serial.read();
+	}
+	return i;
+}
 
+double double_from_serial(){
+	while(Serial.available() == 0){
+	}
+	double f = Serial.parseFloat();
+	while(Serial.available()){
+		Serial.read();
+	}
+	return f;
+}
+
+void setup(){
+	Serial.begin(SERIAL_BAUD_RATE);
 }
 
 void loop(){
+	// This is more of a setup
+	Motor motor_left(PIN_MOTOR_LEFT_FWD, PIN_MOTOR_LEFT_REV, PIN_MOTOR_LEFT_PWM);
+	Motor motor_right(PIN_MOTOR_RIGHT_FWD, PIN_MOTOR_RIGHT_REV, PIN_MOTOR_RIGHT_PWM);
+	Encoder encoder_left(PIN_ENCODER_LEFT_IMPULSE, PIN_ENCODER_LEFT_DIRECTION);
+	Encoder encoder_right(PIN_ENCODER_RIGHT_IMPULSE, PIN_ENCODER_RIGHT_DIRECTION);
 
+	// Actual loop
+	while(true){
+	}
 }
