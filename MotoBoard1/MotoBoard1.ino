@@ -269,6 +269,8 @@ void loop(){
 				motor_left.set_pwm(pwm_left);
 				motor_right.set_pwm(pwm_right);
 			}else if(cmd_char == COMMAND_READ){
+				encoder_left.update_velocity_data();
+				encoder_right.update_velocity_data();
 				Serial.print(encoder_left.get_movement().to_double());
 				Serial.print(SERIAL_SEPARATOR);
 				Serial.println(encoder_right.get_movement().to_double());
