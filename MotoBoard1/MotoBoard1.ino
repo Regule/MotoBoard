@@ -2,7 +2,7 @@
 //                                            CONFIG
 //=================================================================================================
 
-// Pinout
+//------------------------------------------PINOUT-------------------------------------------------
 #define PIN_ENCODER_LEFT_IMPULSE 2 // Must be external interrupt
 #define PIN_ENCODER_LEFT_DIRECTION 4
 
@@ -30,6 +30,23 @@
 #define PIN_SONAR_RIGHT_TRIGGER 17
 #define PIN_SONAR_RIGHT_ECHO 20 // Must be external interrupt
 
+//------------------------------------GENERAL CONFIGURATION----------------------------------------
+#define DEBUG_MODE 
+#define SERIAL_BAUD_RATE 9600
+#define ODOMETRY_UPDATE_PERIOD 100 // in milisceonds
+#define VELOCITY_MEASURE_INTERVAL 100 //in miliseconds
+
+//----------------------------------ROBOT PHYSICAL PROPERTIES--------------------------------------
+#define INTERRUPTS_TO_MM 0.615998
+#define ROBOT_WIDTH 295
+#define LIN_DISPLACEMENT_RATIO INTERRUPTS_TO_MM / 2
+#define THETA_RATIO INTERRUPTS_TO_MM / ROBOT_WIDTH
+
+//-----------------------------------COMMAND ENCODING----------------------------------------------
+#define DIRECTION_FORWARD 0
+#define DIRECTION_REVERSE 1
+#define DIRECTION_STOP 2
+
 
 //=================================================================================================
 //                                     INTERRUPT HANDLING
@@ -56,6 +73,155 @@ void assign_interrupt_handler(int interrupt_id, InterruptHandler* handler, int m
 	interrupt_handlers[interrupt_id] = handler;
 	attachInterrupt(interrupt_id, irs_functions[interrupt_id], mode);
 }
+
+
+//=================================================================================================
+//                                         MOVEMENT CLASS
+//=================================================================================================
+class Movement{
+public:
+	double velocity;
+	bool forward;
+
+	Movement(){
+		velocity = 0.0;
+		forward = true;
+	}
+
+	Movement(double velocity){
+		if(velocity < 0){
+			this->velocity = 0 - velocity;
+			this->forward = false;
+		}else{
+			this->velocity = velocity;
+			this->forward = true;
+		}
+	}
+
+	double to_double(){
+		return forward?velocity:0-velocity;
+	}
+
+	Movement(double velocity, bool forward){
+		this->velocity = velocity;
+		this->forward = forward;
+	}
+
+	void send_as_ascii(){
+		Serial.print("Velocity=");
+		Serial.print(velocity);
+		Serial.print(" direction=");
+		if(forward){
+			Serial.print("FORWARD");
+		}else{
+			Serial.print("REVERSE");
+		}
+	}
+};
+
+
+//=================================================================================================
+//                                         ENCODER CLASS 
+//=================================================================================================
+class Encoder: public InterruptHandler{
+
+private:
+	int pin_impulse;
+	int pin_direction;
+	unsigned long impulse_count;
+	unsigned long timestamp;
+	Movement movement;
+
+public:
+
+	Encoder(int pin_impulse, int pin_direction){
+		this->pin_impulse = pin_impulse;
+		this->pin_direction = pin_direction;
+		this->impulse_count = 0;
+		this->timestamp = millis();
+		pinMode(pin_impulse, INPUT);
+		pinMode(pin_direction, INPUT);
+		assign_interrupt_handler(digitalPinToInterrupt(pin_impulse), this, RISING);
+	}
+
+	void handle_interrupt(){
+		impulse_count++;
+		movement.forward = digitalRead(pin_direction); 
+	}
+
+	void update_velocity_data(){
+		unsigned long now = millis();
+		movement.velocity = (double)(impulse_count)*INTERRUPTS_TO_MM / (now-timestamp);
+		timestamp = now;
+		impulse_count = 0;
+	}
+
+	Movement get_movement(){
+		return this->movement;
+	}
+};
+
+
+//=================================================================================================
+//                                          MOTOR CLASS 
+//=================================================================================================
+
+class Motor{
+
+private:
+	int pin_direction_forward;
+	int pin_direction_reverse;
+	int pin_pwm;
+
+public:
+	
+	Motor(int pin_direction_forward, int pin_direction_reverse, int pin_pwm){
+		pinMode(pin_direction_forward, OUTPUT);
+		pinMode(pin_direction_reverse, OUTPUT);
+		pinMode(pin_pwm, OUTPUT);
+		digitalWrite(pin_direction_forward, LOW);
+		digitalWrite(pin_direction_reverse, LOW);
+		analogWrite(pin_pwm, 0);
+		this->pin_direction_forward = pin_direction_forward;
+		this->pin_direction_reverse = pin_direction_reverse;
+		this->pin_pwm = pin_pwm;
+	}
+
+	void set_pwm(int pwm){
+		analogWrite(pin_pwm, pwm<0?0:pwm>255?255:pwm);
+	}
+
+	void set_direction(int direction){
+		switch(direction){
+			case DIRECTION_FORWARD:
+				digitalWrite(pin_direction_forward, HIGH);
+				digitalWrite(pin_direction_reverse, LOW);
+				break;
+			case DIRECTION_REVERSE:
+				digitalWrite(pin_direction_forward, LOW);
+				digitalWrite(pin_direction_reverse, HIGH);
+				break;
+			case DIRECTION_STOP: 
+				// If default behaviour changes remember to write stop behaviour here instead
+			default:
+				// TODO: THIS (COMMENTED PART) DO NOT WORK AS INTENDED, FIND OUT WHY
+				//digitalWrite(pin_direction_forward, HIGH);
+				//digitalWrite(pin_direction_reverse, HIGH);
+				//analogWrite(pin_pwm, 0);
+				digitalWrite(pin_direction_forward, HIGH);
+				digitalWrite(pin_direction_reverse, HIGH);
+				digitalWrite(pin_pwm, HIGH);
+		}
+	}
+
+	void emergency_break(){
+		digitalWrite(pin_direction_forward, HIGH);
+		digitalWrite(pin_direction_reverse, HIGH);
+		digitalWrite(pin_pwm, HIGH);
+	}	
+
+};
+
 
 //=================================================================================================
 //                               SETUP-LOOP + SERIAL HANDLING
