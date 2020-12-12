@@ -49,6 +49,8 @@
 #define COMMAND_WRITE '>'
 #define COMMAND_READ '<'
 #define COMMAND_RESET 'r'
+#define COMMAND_STOP 's'
+#define SERIAL_SEPARATOR '#'
 
 //=================================================================================================
 //                                     INTERRUPT HANDLING
@@ -229,25 +231,6 @@ public:
 //                               SETUP-LOOP + SERIAL HANDLING
 //=================================================================================================
 
-int int_from_serial(){
-	while(Serial.available() == 0){
-	}
-	int i = Serial.parseInt();
-	while(Serial.available()){
-		Serial.read();
-	}
-	return i;
-}
-
-double double_from_serial(){
-	while(Serial.available() == 0){
-	}
-	double f = Serial.parseFloat();
-	while(Serial.available()){
-		Serial.read();
-	}
-	return f;
-}
 
 void setup(){
 	Serial.begin(SERIAL_BAUD_RATE);
@@ -262,5 +245,22 @@ void loop(){
 
 	// Actual loop
 	while(true){
+		if(Serial.available()){
+			int cmd_char = Serial.read();
+			switch(cmd_char){
+				case COMMAND_WRITE:
+				Serial.println("Recieved write command");
+				int pwm_left = Serial.parseInt();
+				Serial.read();
+				int pwm_right = Serial.parseInt();
+				Serial.print("Setting pwm, left=");
+				Serial.print(pwm_left, DEC);
+				Serial.print(" right=");
+				Serial.println(pwm_right);
+				motor_left.set_pwm(pwm_left);
+				motor_right.set_pwm(pwm_right);
+				break; 
+			}
+		}
 	}
 }
