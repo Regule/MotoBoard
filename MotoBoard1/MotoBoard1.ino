@@ -37,10 +37,12 @@
 #define VELOCITY_MEASURE_INTERVAL 100 //in miliseconds
 
 //----------------------------------ROBOT PHYSICAL PROPERTIES--------------------------------------
-#define INTERRUPTS_TO_MM 0.615998
-#define ROBOT_WIDTH 295
-#define LIN_DISPLACEMENT_RATIO INTERRUPTS_TO_MM / 2
-#define THETA_RATIO INTERRUPTS_TO_MM / ROBOT_WIDTH
+#define INTERRUPTS_TO_MM 0.615998 // mm/impulse
+#define ROBOT_WIDTH 295 // mm
+#define LIN_DISPLACEMENT_RATIO INTERRUPTS_TO_MM / 2 // mm/impulse
+#define THETA_RATIO INTERRUPTS_TO_MM / ROBOT_WIDTH // 1/impulse
+#define SPEED_OF_SOUND 0.0343 // cm/micro-s
+#define DURATION_TO_DISTACNE_FACTOR SPEED_OF_SOUND / 2 // cm/micro-s 
 
 //-----------------------------------COMMAND ENCODING----------------------------------------------
 #define DIRECTION_FORWARD 0
@@ -78,6 +80,10 @@ void assign_interrupt_handler(int interrupt_id, InterruptHandler* handler, int m
 	attachInterrupt(interrupt_id, irs_functions[interrupt_id], mode);
 }
 
+void disable_interrupt_handler(int interrupt_id){
+	interrupt_handlers[interrupt_id] = NULL;
+	detachInterrupt(interrupt_id);	
+}
 
 //=================================================================================================
 //                                         MOVEMENT CLASS
@@ -194,6 +200,7 @@ public:
 		this->pin_pwm = pin_pwm;
 		this->direction = DIRECTION_STOP;
 		this->locked = false;
+		this->pwm = 0;
 	}
 
 	void reset(){
@@ -257,6 +264,62 @@ public:
 
 
 //=================================================================================================
+//                                             SONAR
+//=================================================================================================
+
+class Sonar: public InterruptHandler{
+private:
+	int trigger_pin;
+	int echo_pin;
+	unsigned long timestamp;
+	unsigned long duration;
+	bool awaiting_response;
+
+public:
+	Sonar(int trigger_pin, int echo_pin){
+		this->trigger_pin = trigger_pin;
+		this->echo_pin = echo_pin;
+		this->timestamp = 0;
+		this->duration = 0;
+		this->awaiting_response = false;
+		pinMode(trigger_pin, OUTPUT);
+		pinMode(echo_pin, INPUT);
+		assign_interrupt_handler(digitalPinToInterrupt(echo_pin), this, CHANGE);	
+	}
+
+	void handle_interrupt(){
+		if(digitalRead(echo_pin) == HIGH){
+			timestamp = micros();
+			awaiting_response = true;
+		}else{
+			duration = micros() - timestamp;
+			awaiting_response = false;
+		}
+	}
+
+	void ping(){
+		if(!awaiting_response){
+			digitalWrite(trigger_pin, LOW);
+			delayMicroseconds(4);
+			digitalWrite(trigger_pin, HIGH);
+			delayMicroseconds(10);
+			digitalWrite(trigger_pin, LOW);
+		}
+	}
+
+	double get_distance(){
+		return duration * DURATION_TO_DISTACNE_FACTOR;
+	}
+
+	~Sonar(){
+		disable_interrupt_handler(digitalPinToInterrupt(echo_pin));
+	}
+
+
+};
+
+
+//=================================================================================================
 //                               SETUP-LOOP + SERIAL HANDLING
 //=================================================================================================
 
@@ -271,11 +334,15 @@ void loop(){
 	Motor motor_right(PIN_MOTOR_RIGHT_FWD, PIN_MOTOR_RIGHT_REV, PIN_MOTOR_RIGHT_PWM);
 	Encoder encoder_left(PIN_ENCODER_LEFT_IMPULSE, PIN_ENCODER_LEFT_DIRECTION);
 	Encoder encoder_right(PIN_ENCODER_RIGHT_IMPULSE, PIN_ENCODER_RIGHT_DIRECTION);
+	Sonar sonar_left(PIN_SONAR_LEFT_TRIGGER, PIN_SONAR_LEFT_ECHO);
+	Sonar sonar_center(PIN_SONAR_CENTER_TRIGGER, PIN_SONAR_CENTER_ECHO);
+	Sonar sonar_right(PIN_SONAR_RIGHT_TRIGGER, PIN_SONAR_RIGHT_ECHO);
 
-	motor_left.set_direction(DIRECTION_FORWARD);
-	motor_right.set_direction(DIRECTION_FORWARD);
 	// Actual loop
 	while(true){
+		sonar_left.ping();
+		sonar_center.ping();
+		sonar_right.ping();
 		if(Serial.available()){
 			int cmd_char = Serial.read();
 			//Serial.print("Command code = ");
@@ -314,7 +381,13 @@ void loop(){
 				Serial.print(SERIAL_SEPARATOR);
 				Serial.print(motor_right.get_direction());
 				Serial.print(SERIAL_SEPARATOR);
-				Serial.println(motor_right.get_pwm());
+				Serial.print(motor_right.get_pwm());
+				Serial.print(SERIAL_SEPARATOR);
+				Serial.print(sonar_left.get_distance());
+				Serial.print(SERIAL_SEPARATOR);
+				Serial.print(sonar_center.get_distance());
+				Serial.print(SERIAL_SEPARATOR);
+				Serial.println(sonar_right.get_distance());
 			}else{
 				//Serial.print("Unknown command code \"");
 				//Serial.write(cmd_char);
