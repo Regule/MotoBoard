@@ -212,10 +212,9 @@ public:
 	}
 
 	void set_pwm(int pwm){
-		if(!locked){
-			this->pwm = pwm<0?0:pwm>255?255:pwm;
-			analogWrite(pin_pwm, this->pwm);
-		}
+		if(locked) return;
+		this->pwm = pwm<0?0:pwm>255?255:pwm;
+		analogWrite(pin_pwm, this->pwm);
 	}
 
 	int get_pwm(){
@@ -223,6 +222,7 @@ public:
 	}
 
 	void set_direction(int direction){
+		if(locked) return;
 		this->direction = direction;
 		switch(direction){
 			case DIRECTION_FORWARD:
@@ -356,10 +356,6 @@ void loop(){
 				int dir_right = Serial.parseInt();
 				Serial.read();
 				int pwm_right = Serial.parseInt();
-				Serial.print("Setting pwm, left=");
-				Serial.print(pwm_left, DEC);
-				Serial.print(" right=");
-				Serial.println(pwm_right);
 				motor_left.set_direction(dir_left);
 				motor_right.set_direction(dir_right);
 				motor_left.set_pwm(pwm_left);
@@ -388,10 +384,12 @@ void loop(){
 				Serial.print(sonar_center.get_distance());
 				Serial.print(SERIAL_SEPARATOR);
 				Serial.println(sonar_right.get_distance());
-			}else{
-				//Serial.print("Unknown command code \"");
-				//Serial.write(cmd_char);
-				//Serial.println("\"");
+			}else if(cmd_char == COMMAND_STOP){
+				motor_left.emergency_break();
+				motor_right.emergency_break();
+			}else if(cmd_char == COMMAND_RESET){
+				motor_left.reset();
+				motor_right.reset();
 			}
 		}
 	}
