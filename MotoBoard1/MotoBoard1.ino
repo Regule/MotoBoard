@@ -176,6 +176,9 @@ private:
 	int pin_direction_forward;
 	int pin_direction_reverse;
 	int pin_pwm;
+	int direction;
+	int locked;
+	int pwm;
 
 public:
 	
@@ -189,13 +192,31 @@ public:
 		this->pin_direction_forward = pin_direction_forward;
 		this->pin_direction_reverse = pin_direction_reverse;
 		this->pin_pwm = pin_pwm;
+		this->direction = DIRECTION_STOP;
+		this->locked = false;
+	}
+
+	void reset(){
+		locked = false;
+	}
+
+	bool is_locked(){
+		return locked;
 	}
 
 	void set_pwm(int pwm){
-		analogWrite(pin_pwm, pwm<0?0:pwm>255?255:pwm);
+		if(!locked){
+			this->pwm = pwm<0?0:pwm>255?255:pwm;
+			analogWrite(pin_pwm, this->pwm);
+		}
+	}
+
+	int get_pwm(){
+		return this->pwm;
 	}
 
 	void set_direction(int direction){
+		this->direction = direction;
 		switch(direction){
 			case DIRECTION_FORWARD:
 				digitalWrite(pin_direction_forward, HIGH);
@@ -215,13 +236,21 @@ public:
 				digitalWrite(pin_direction_forward, HIGH);
 				digitalWrite(pin_direction_reverse, HIGH);
 				digitalWrite(pin_pwm, HIGH);
+				this->direction = DIRECTION_STOP;
 		}
+	}
+
+	int get_direction(){
+		return direction;
 	}
 
 	void emergency_break(){
 		digitalWrite(pin_direction_forward, HIGH);
 		digitalWrite(pin_direction_reverse, HIGH);
 		digitalWrite(pin_pwm, HIGH);
+		this->direction = DIRECTION_STOP;
+		this->pwm = 0;
+		this->locked = true;
 	}	
 
 };
@@ -273,7 +302,19 @@ void loop(){
 				encoder_right.update_velocity_data();
 				Serial.print(encoder_left.get_movement().to_double());
 				Serial.print(SERIAL_SEPARATOR);
-				Serial.println(encoder_right.get_movement().to_double());
+				Serial.print(encoder_right.get_movement().to_double());
+				Serial.print(SERIAL_SEPARATOR);
+				Serial.print(motor_left.is_locked()?'L':'U');
+				Serial.print(SERIAL_SEPARATOR);
+				Serial.print(motor_left.get_direction());
+				Serial.print(SERIAL_SEPARATOR);
+				Serial.print(motor_left.get_pwm());
+				Serial.print(SERIAL_SEPARATOR);
+				Serial.print(motor_right.is_locked()?'L':'U');
+				Serial.print(SERIAL_SEPARATOR);
+				Serial.print(motor_right.get_direction());
+				Serial.print(SERIAL_SEPARATOR);
+				Serial.println(motor_right.get_pwm());
 			}else{
 				//Serial.print("Unknown command code \"");
 				//Serial.write(cmd_char);
