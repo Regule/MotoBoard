@@ -53,6 +53,10 @@
 #define COMMAND_RESET 'r'
 #define COMMAND_STOP 's'
 #define SERIAL_SEPARATOR '#'
+#define INDICATOR_MOTOR_UNLOCKED 'U'
+#define INDICATOR_MOTOR_LOCKED 'L'
+#define INDICATOR_BUMPER_RELEASED 'R'
+#define INDICATOR_BUMPER_PRESSED 'P'
 
 //=================================================================================================
 //                                     INTERRUPT HANDLING
@@ -329,7 +333,7 @@ void setup(){
 }
 
 void loop(){
-	// This is more of a setup
+	// This is more of a setup, also bumpers are ugly in this version
 	Motor motor_left(PIN_MOTOR_LEFT_FWD, PIN_MOTOR_LEFT_REV, PIN_MOTOR_LEFT_PWM);
 	Motor motor_right(PIN_MOTOR_RIGHT_FWD, PIN_MOTOR_RIGHT_REV, PIN_MOTOR_RIGHT_PWM);
 	Encoder encoder_left(PIN_ENCODER_LEFT_IMPULSE, PIN_ENCODER_LEFT_DIRECTION);
@@ -337,9 +341,22 @@ void loop(){
 	Sonar sonar_left(PIN_SONAR_LEFT_TRIGGER, PIN_SONAR_LEFT_ECHO);
 	Sonar sonar_center(PIN_SONAR_CENTER_TRIGGER, PIN_SONAR_CENTER_ECHO);
 	Sonar sonar_right(PIN_SONAR_RIGHT_TRIGGER, PIN_SONAR_RIGHT_ECHO);
+	pinMode(PIN_BUMPER_LEFT, INPUT);
+	pinMode(PIN_BUMPER_CENTER, INPUT);
+	pinMode(PIN_BUMPER_RIGHT, INPUT);
+	int bumper_left = digitalRead(PIN_BUMPER_LEFT);
+	int bumper_center = digitalRead(PIN_BUMPER_CENTER);
+	int bumper_right = digitalRead(PIN_BUMPER_RIGHT);
 
 	// Actual loop
 	while(true){
+		bumper_left = digitalRead(PIN_BUMPER_LEFT);
+		bumper_center = digitalRead(PIN_BUMPER_CENTER);
+		bumper_right = digitalRead(PIN_BUMPER_RIGHT);
+		if(bumper_left == LOW || bumper_center == LOW || bumper_right == LOW){
+			motor_left.emergency_break();
+			motor_right.emergency_break();
+		}
 		sonar_left.ping();
 		sonar_center.ping();
 		sonar_right.ping();
@@ -367,13 +384,13 @@ void loop(){
 				Serial.print(SERIAL_SEPARATOR);
 				Serial.print(encoder_right.get_movement().to_double());
 				Serial.print(SERIAL_SEPARATOR);
-				Serial.print(motor_left.is_locked()?'L':'U');
+				Serial.print(motor_left.is_locked()?INDICATOR_MOTOR_LOCKED:INDICATOR_MOTOR_UNLOCKED);
 				Serial.print(SERIAL_SEPARATOR);
 				Serial.print(motor_left.get_direction());
 				Serial.print(SERIAL_SEPARATOR);
 				Serial.print(motor_left.get_pwm());
 				Serial.print(SERIAL_SEPARATOR);
-				Serial.print(motor_right.is_locked()?'L':'U');
+				Serial.print(motor_right.is_locked()?INDICATOR_MOTOR_LOCKED:INDICATOR_MOTOR_UNLOCKED);
 				Serial.print(SERIAL_SEPARATOR);
 				Serial.print(motor_right.get_direction());
 				Serial.print(SERIAL_SEPARATOR);
@@ -383,7 +400,13 @@ void loop(){
 				Serial.print(SERIAL_SEPARATOR);
 				Serial.print(sonar_center.get_distance());
 				Serial.print(SERIAL_SEPARATOR);
-				Serial.println(sonar_right.get_distance());
+				Serial.print(sonar_right.get_distance());
+				Serial.print(SERIAL_SEPARATOR);
+				Serial.print(bumper_left==LOW?INDICATOR_BUMPER_PRESSED:INDICATOR_BUMPER_RELEASED);
+				Serial.print(SERIAL_SEPARATOR);
+				Serial.print(bumper_center==LOW?INDICATOR_BUMPER_PRESSED:INDICATOR_BUMPER_RELEASED);
+				Serial.print(SERIAL_SEPARATOR);
+				Serial.println(bumper_right==LOW?INDICATOR_BUMPER_PRESSED:INDICATOR_BUMPER_RELEASED);
 			}else if(cmd_char == COMMAND_STOP){
 				motor_left.emergency_break();
 				motor_right.emergency_break();
