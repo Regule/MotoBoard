@@ -1,0 +1,38 @@
+You can send one of following messages to moto board via serial port:
+ - >[dir]#[pwm]#[dir]#[pwm]
+ - <
+ - s
+ - r
+
+In first case [something] must be replaced with specific value. Dir is to be set to either 
+0 if motor is to move forward or 1 if desired direction is reverse. Pwm is to be set to integer
+value in range from 0 to 255 where 0 means full stop and 255 maximum speed.
+So to make robot stop you will send ">0#0#0#0" and to make it go forward at half speed it will
+be ">0#128#0#128". Other example may be ">0#255#1#255" which will cause robot to spin in place.
+
+Sending command "s" will cause an emergncy break, not only it will stop robot more abruptly then
+just setting pwm to 0 but it will also lock motors. This mean that you will not be able to 
+set motor speed with ">" command until it will be reset.
+Other case when motor is locked is when bumpers hit something, in that case robot must be 
+manually moved by someone so that bumper no longer touches obstacle and reset signal must be 
+sent.
+
+You can use "r" command to reset motors after emergency break.
+
+Finally there is "<" command which will cause controller to return its state in following
+format:
+
+[enc_left]#[enc_right]#[lock_left]#[dir_left]#[pwm_left]#[lock_right]#[dir_right]#[pwm_right]#
+[sonar_left]#[sonar_center]#[sonar_right]#[bumper_left]#[bumper_canter]#[bumper_right]
+
+Of course there is no endline in actual response and was added here only for readalibity
+purposes.
+
+First two strings represent foloating points values of encoder readouts then we have status
+of two motors. First is single character 'U' for unlocked and 'L' for locked.
+If motor is locked you cannot set pwm on it until reset. Next are ineger numbers reperesenting
+direction and PWM set on motor.
+After that there are three floating point values representing a sonar readouts and finally 
+bumper status.
+
+Bumper status can be either 'P' for pressed or 'R' for released.
