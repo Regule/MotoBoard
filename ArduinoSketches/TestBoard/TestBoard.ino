@@ -115,10 +115,8 @@ public:
 //=================================================================================================
 class Encoder {
 
-private:
-	Movement movement;
-
 public:
+	Movement movement;
 
 	Encoder(int pin_impulse, int pin_direction){
 	}
@@ -217,6 +215,15 @@ public:
 //=================================================================================================
 //                                      USER INTERFACE (LCD)
 //=================================================================================================
+
+Motor motor_left(PIN_MOTOR_LEFT_FWD, PIN_MOTOR_LEFT_REV, PIN_MOTOR_LEFT_PWM);
+Motor motor_right(PIN_MOTOR_RIGHT_FWD, PIN_MOTOR_RIGHT_REV, PIN_MOTOR_RIGHT_PWM);
+Encoder encoder_left(PIN_ENCODER_LEFT_IMPULSE, PIN_ENCODER_LEFT_DIRECTION);
+Encoder encoder_right(PIN_ENCODER_RIGHT_IMPULSE, PIN_ENCODER_RIGHT_DIRECTION);
+Sonar sonar_left(PIN_SONAR_LEFT_TRIGGER, PIN_SONAR_LEFT_ECHO);
+Sonar sonar_center(PIN_SONAR_CENTER_TRIGGER, PIN_SONAR_CENTER_ECHO);
+Sonar sonar_right(PIN_SONAR_RIGHT_TRIGGER, PIN_SONAR_RIGHT_ECHO);
+
 #define LCD_TITLE_SCREEN 0
 #define LCD_BUTTON_DEBUG 1
 
@@ -235,6 +242,7 @@ LiquidCrystal lcd(8,9,4,5,6,7);
 int lcd_ui_cursor=0;
 bool button_pressed=false;
 int lcd_state = LCD_TITLE_SCREEN;
+
 
 int lcd_read_button(){
 	int button = (int)analogRead(LCD_PIN_BUTTONS)/100;
@@ -281,7 +289,64 @@ void lcd_title_screen(){
 void lcd_encoders(){
 	lcd.setCursor(0,0);
 	lcd.print("Encoders:");
+	lcd.setCursor(0,1);
+	lcd.print("L-");
+	lcd.print(abs(encoder_left.get_movement().to_double()));
+	lcd.print(encoder_left.get_movement().forward?"F":"R");
+	lcd.print(" R-");
+	lcd.print(abs(encoder_right.get_movement().to_double()));
+	lcd.print(encoder_right.get_movement().forward?"F":"R");
+	double modifier = 1;
+	bool left = true;
 	switch(lcd_read_button()){
+		case LCD_BUTTON_LEFT:
+			lcd_ui_cursor--;
+			if(lcd_ui_cursor<0) lcd_ui_cursor = 8;
+			break;
+		case LCD_BUTTON_RIGHT:
+			lcd_ui_cursor++;
+			if(lcd_ui_cursor>8) lcd_ui_cursor = 0;
+			break;
+		case LCD_BUTTON_DOWN:
+			modifier = -1;
+		case LCD_BUTTON_UP:
+			switch(lcd_ui_cursor){
+				case 2:
+					modifier *= 0.1;
+				case 1:
+					modifier *= 0.1;
+					break;
+				case 3:
+					modifier = 0;
+					encoder_left.movement.forward = !encoder_left.movement.forward;
+					break;
+				case 6:
+					modifier *= 0.1;
+				case 5:
+					modifier *= 0.1;
+				case 4:
+					left = false;
+					break;
+				case 7:
+					modifier = 0;
+					encoder_right.movement.forward = !encoder_right.movement.forward;	
+			}
+			if(left){
+				encoder_left.movement.velocity += modifier;
+				if(encoder_left.movement.velocity<0){
+					encoder_left.movement.forward = false;
+				}else{
+					encoder_left.movement.forward = true;
+				}
+			}else{
+				encoder_right.movement.velocity += modifier;
+				if(encoder_right.movement.velocity<0){
+					encoder_right.movement.forward = false;
+				}else{
+					encoder_right.movement.forward = true;
+				}
+			}
+			break;
 		case LCD_BUTTON_ACTION:
 			lcd_state = LCD_TITLE_SCREEN;
 			lcd_ui_cursor = 0;
@@ -360,13 +425,6 @@ void setup(){
 
 void loop(){
 	// This is more of a setup, also bumpers are ugly in this version
-	Motor motor_left(PIN_MOTOR_LEFT_FWD, PIN_MOTOR_LEFT_REV, PIN_MOTOR_LEFT_PWM);
-	Motor motor_right(PIN_MOTOR_RIGHT_FWD, PIN_MOTOR_RIGHT_REV, PIN_MOTOR_RIGHT_PWM);
-	Encoder encoder_left(PIN_ENCODER_LEFT_IMPULSE, PIN_ENCODER_LEFT_DIRECTION);
-	Encoder encoder_right(PIN_ENCODER_RIGHT_IMPULSE, PIN_ENCODER_RIGHT_DIRECTION);
-	Sonar sonar_left(PIN_SONAR_LEFT_TRIGGER, PIN_SONAR_LEFT_ECHO);
-	Sonar sonar_center(PIN_SONAR_CENTER_TRIGGER, PIN_SONAR_CENTER_ECHO);
-	Sonar sonar_right(PIN_SONAR_RIGHT_TRIGGER, PIN_SONAR_RIGHT_ECHO);
 
 	int bumper_left = HIGH;
 	int bumper_center = HIGH;
