@@ -290,10 +290,10 @@ void lcd_encoders(){
 	lcd.setCursor(0,0);
 	lcd.print("Encoders:");
 	lcd.setCursor(0,1);
-	lcd.print("L-");
+	lcd.print("L>");
 	lcd.print(abs(encoder_left.get_movement().to_double()));
 	lcd.print(encoder_left.get_movement().forward?"F":"R");
-	lcd.print(" R-");
+	lcd.print(" R>");
 	lcd.print(abs(encoder_right.get_movement().to_double()));
 	lcd.print(encoder_right.get_movement().forward?"F":"R");
 	double modifier = 1;
@@ -301,11 +301,11 @@ void lcd_encoders(){
 	switch(lcd_read_button()){
 		case LCD_BUTTON_LEFT:
 			lcd_ui_cursor--;
-			if(lcd_ui_cursor<0) lcd_ui_cursor = 8;
+			if(lcd_ui_cursor<0) lcd_ui_cursor = 5;
 			break;
 		case LCD_BUTTON_RIGHT:
 			lcd_ui_cursor++;
-			if(lcd_ui_cursor>8) lcd_ui_cursor = 0;
+			if(lcd_ui_cursor>5) lcd_ui_cursor = 0;
 			break;
 		case LCD_BUTTON_DOWN:
 			modifier = -1;
@@ -316,20 +316,13 @@ void lcd_encoders(){
 				case 1:
 					modifier *= 0.1;
 					break;
-				case 3:
-					modifier = 0;
-					encoder_left.movement.forward = !encoder_left.movement.forward;
-					break;
-				case 6:
-					modifier *= 0.1;
 				case 5:
 					modifier *= 0.1;
 				case 4:
+					modifier *= 0.1;
+				case 3:
 					left = false;
 					break;
-				case 7:
-					modifier = 0;
-					encoder_right.movement.forward = !encoder_right.movement.forward;	
 			}
 			if(left){
 				encoder_left.movement.velocity += modifier;
@@ -356,7 +349,19 @@ void lcd_encoders(){
 
 void lcd_motors(){
 	lcd.setCursor(0,0);
-	lcd.print("Motors:");
+	lcd.print("Left>");
+	lcd.print(motor_left.is_locked()?INDICATOR_MOTOR_LOCKED:INDICATOR_MOTOR_UNLOCKED);
+	lcd.print(",");
+	lcd.print(motor_left.get_direction());
+	lcd.print(",");
+	lcd.print(motor_left.get_pwm());
+	lcd.setCursor(0,1);
+	lcd.print("Right>");
+	lcd.print(motor_right.is_locked()?INDICATOR_MOTOR_LOCKED:INDICATOR_MOTOR_UNLOCKED);
+	lcd.print(",");
+	lcd.print(motor_right.get_direction());
+	lcd.print(",");
+	lcd.print(motor_right.get_pwm());
 	switch(lcd_read_button()){
 		case LCD_BUTTON_ACTION:
 			lcd_state = LCD_TITLE_SCREEN;
