@@ -1,4 +1,10 @@
 //=================================================================================================
+//                                           INCLUDES
+//=================================================================================================
+#include<LiquidCrystal.h>
+
+
+//=================================================================================================
 //                                            CONFIG
 //=================================================================================================
 
@@ -208,14 +214,148 @@ public:
 
 };
 
+//=================================================================================================
+//                                      USER INTERFACE (LCD)
+//=================================================================================================
+#define LCD_TITLE_SCREEN 0
+#define LCD_BUTTON_DEBUG 1
+
+#define LCD_BUTTON_NONE 10
+#define LCD_BUTTON_LEFT 8
+#define LCD_BUTTON_RIGHT 2
+#define LCD_BUTTON_UP 5
+#define LCD_BUTTON_DOWN 6
+#define LCD_BUTTON_ACTION 0
+
+#define LCD_PIN_BUTTONS 0
+
+#define LCD_UI_ERROR_MSG "UI ERROR"
+
+LiquidCrystal lcd(8,9,4,5,6,7);
+int lcd_ui_cursor=0;
+bool button_pressed=false;
+int lcd_state = LCD_TITLE_SCREEN;
+
+int lcd_read_button(){
+	int button = (int)analogRead(LCD_PIN_BUTTONS)/100;
+	if(!button_pressed && button != LCD_BUTTON_NONE){
+		button_pressed = true;
+	}else if(button_pressed && button == LCD_BUTTON_NONE){
+		button_pressed = false;
+	}else{
+		button = LCD_BUTTON_NONE;
+	}
+	return button;
+}
+
+void lcd_title_screen(){
+	lcd.setCursor(0,0);
+	lcd.print("Oculi Mobili");
+	lcd.setCursor(0,1);
+	switch(lcd_ui_cursor){
+		case 0 : lcd.print("Test board"); break;
+		case 1 : lcd.print("Encoders"); break;
+		case 2 : lcd.print("Motors"); break;
+		case 3 : lcd.print("Sonars"); break;
+		case 4 : lcd.print("Bumpers"); break;
+		default : lcd.print(LCD_UI_ERROR_MSG); break; 
+	}
+	switch(lcd_read_button()){
+		case LCD_BUTTON_UP:
+			lcd_ui_cursor--;
+			if(lcd_ui_cursor<=0) lcd_ui_cursor = 4;
+			lcd.clear();
+			break;
+		case LCD_BUTTON_DOWN:
+			lcd_ui_cursor++;
+			lcd.clear();
+			if(lcd_ui_cursor>4) lcd_ui_cursor = 1;
+			break;
+		case LCD_BUTTON_ACTION:
+			lcd_state = lcd_ui_cursor;
+			lcd_ui_cursor = 0;
+			lcd.clear();
+	}
+}
+
+void lcd_encoders(){
+	lcd.setCursor(0,0);
+	lcd.print("Encoders:");
+	switch(lcd_read_button()){
+		case LCD_BUTTON_ACTION:
+			lcd_state = LCD_TITLE_SCREEN;
+			lcd_ui_cursor = 0;
+			lcd.clear();
+	}
+}
+
+void lcd_motors(){
+	lcd.setCursor(0,0);
+	lcd.print("Motors:");
+	switch(lcd_read_button()){
+		case LCD_BUTTON_ACTION:
+			lcd_state = LCD_TITLE_SCREEN;
+			lcd_ui_cursor = 0;
+			lcd.clear();
+	}
+}
+
+void lcd_sonars(){
+	lcd.setCursor(0,0);
+	lcd.print("Sonars:");
+	switch(lcd_read_button()){
+		case LCD_BUTTON_ACTION:
+			lcd_state = LCD_TITLE_SCREEN;
+			lcd_ui_cursor = 0;
+			lcd.clear();
+	}
+}
+
+void lcd_bumpers(){
+	lcd.setCursor(0,0);
+	lcd.print("Bumpers:");
+	switch(lcd_read_button()){
+		case LCD_BUTTON_ACTION:
+			lcd_state = LCD_TITLE_SCREEN;
+			lcd_ui_cursor = 0;
+			lcd.clear();
+	}
+}
+ 
+
+void lcd_debug_buttons(){
+	lcd.setCursor(0,0);
+	lcd.print("Button input:");
+	lcd.setCursor(0,1);
+	lcd.print("            ");
+	lcd.setCursor(0,1);
+	lcd.print(analogRead(LCD_PIN_BUTTONS));
+	lcd.print(" ");
+	int button = lcd_read_button();
+	lcd.print(button);
+	lcd.print(" ");
+	switch(lcd_read_button()){
+		case LCD_BUTTON_NONE: lcd.print("NONE"); break;
+		case LCD_BUTTON_LEFT: lcd.print("LEFT"); break;
+		case LCD_BUTTON_RIGHT: lcd.print("RIGHT"); break;
+		case LCD_BUTTON_UP: lcd.print("UP"); break;
+		case LCD_BUTTON_DOWN: lcd.print("DOWN"); break;
+		case LCD_BUTTON_ACTION: lcd.print("ACTION"); break;
+		default: lcd.print("UNKNOWN");
+	}
+}
+
+void(* lcd_handlers[])() = {lcd_title_screen, lcd_encoders, lcd_motors, lcd_sonars, lcd_bumpers}; 
 
 //=================================================================================================
-//                               SETUP-LOOP + SERIAL HANDLING
+//                                   SETUP-LOOP + SERIAL HANDLING
 //=================================================================================================
 
 
 void setup(){
 	Serial.begin(SERIAL_BAUD_RATE);
+	lcd.begin(16,2);
+	lcd_title_screen();
 }
 
 void loop(){
@@ -233,6 +373,7 @@ void loop(){
 	int bumper_right = HIGH;
 	// Actual loop
 	while(true){
+		lcd_handlers[lcd_state]();
 		if(bumper_left == LOW || bumper_center == LOW || bumper_right == LOW){
 			motor_left.emergency_break();
 			motor_right.emergency_break();
