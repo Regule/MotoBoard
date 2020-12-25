@@ -224,6 +224,10 @@ Sonar sonar_left(PIN_SONAR_LEFT_TRIGGER, PIN_SONAR_LEFT_ECHO);
 Sonar sonar_center(PIN_SONAR_CENTER_TRIGGER, PIN_SONAR_CENTER_ECHO);
 Sonar sonar_right(PIN_SONAR_RIGHT_TRIGGER, PIN_SONAR_RIGHT_ECHO);
 
+int bumper_left = HIGH;
+int bumper_center = HIGH;
+int bumper_right = HIGH;
+
 #define LCD_TITLE_SCREEN 0
 #define LCD_BUTTON_DEBUG 1
 
@@ -384,7 +388,23 @@ void lcd_sonars(){
 void lcd_bumpers(){
 	lcd.setCursor(0,0);
 	lcd.print("Bumpers:");
+	lcd.setCursor(0,1);
+	lcd.print(bumper_left==LOW?INDICATOR_BUMPER_PRESSED:INDICATOR_BUMPER_RELEASED);
+	lcd.print(" ");
+	lcd.print(bumper_center==LOW?INDICATOR_BUMPER_PRESSED:INDICATOR_BUMPER_RELEASED);
+	lcd.print(" ");
+	lcd.print(bumper_right==LOW?INDICATOR_BUMPER_PRESSED:INDICATOR_BUMPER_RELEASED);
 	switch(lcd_read_button()){
+		case LCD_BUTTON_LEFT:
+			bumper_left = !bumper_left;
+			break;
+		case LCD_BUTTON_UP:
+		case LCD_BUTTON_DOWN:
+			bumper_center = !bumper_center;
+			break;
+		case LCD_BUTTON_RIGHT:
+			bumper_right = !bumper_right;
+			break;
 		case LCD_BUTTON_ACTION:
 			lcd_state = LCD_TITLE_SCREEN;
 			lcd_ui_cursor = 0;
@@ -431,9 +451,6 @@ void setup(){
 void loop(){
 	// This is more of a setup, also bumpers are ugly in this version
 
-	int bumper_left = HIGH;
-	int bumper_center = HIGH;
-	int bumper_right = HIGH;
 	// Actual loop
 	while(true){
 		lcd_handlers[lcd_state]();
