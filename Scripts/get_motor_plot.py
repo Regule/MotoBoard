@@ -1,5 +1,6 @@
 import argparse
 import serial
+import time
 import pandas as pd
 from serial.tools import list_ports
 from time import sleep
@@ -15,14 +16,24 @@ def set_pwm(left_pwm, right_pwm, moto_board, encoding):
 def get_encoder_readouts(moto_board, encoding, readout_count, delay):
     left_readout = 0.0
     right_readout = 0.0
-    for _ in range(readout_count):
-        moto_board.write('<'.encode(encoding))
-        response = moto_board.readline().split('#')
-        left_readout += float(response[0])
-        right_readout += float(response[1])
+    readouts = 0
+    print('Starting encoder readout.')
+    for i in range(readout_count):
+        print(f'Starting readout {i}')
+        moto_board.write(bytes('<', encoding))
+        response = moto_board.readline().decode(encoding)
+        if len(response)!=0:
+            response = response.split('#')
+            left_readout += float(response[0])
+            right_readout += float(response[1])
+            readouts += 1
+            print(f'Readout no.{i} completed ({left_readout} {right_readout}).')
+        else:
+            print('Readout failed due to timeout.')
         sleep(delay)
-    left_readout /= readout_count
-    right_readout /= readout_count
+    left_readout /= readouts
+    right_readout /= readouts
+    print(f'Avarage readout left={left_readout} right={right_readout}')
     return left_readout, right_readout
 
 
@@ -47,10 +58,11 @@ def main(args):
         args.port = interactive_port_selection()
     if args.port is None:
         return
-    moto_board = serial.Serial(args.port, args.baudrate)
+    moto_board = serial.Serial(args.port, args.baudrate, timeout=args.timeout)
     sleep(2)
     moto_board.write(bytes('<', args.encoding))
     print(moto_board.readline().decode(args.encoding))
+    print('Initializing motors')
     set_pwm(125,125,moto_board,args.encoding)
     left, right = get_encoder_readouts(moto_board, args.encoding,
             args.readout_count, args.readout_delay)
@@ -78,6 +90,10 @@ def parse_arguments():
             type=int,
             default=2,
             help='Delay, in seconds, between two readouts.')
+    parser.add_argument('-t', '--timeout',
+            type=int,
+            default=1,
+            help='Timeout in serial communication')
     return parser.parse_args()
 
 if __name__ == '__main__':
