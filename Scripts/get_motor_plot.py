@@ -2,6 +2,7 @@ import argparse
 import serial
 import pandas as pd
 from serial.tools import list_ports
+from time import sleep
 
 def interactive_port_selection():
     ports = list(map(str,list_ports.comports()))
@@ -24,10 +25,11 @@ def main(args):
     if args.port is None:
         return
     moto_board = serial.Serial(args.port, args.baudrate)
+    sleep(2)
     print('WRITING')
     moto_board.write(bytes('<', args.encoding))
     print('READING')
-    print(moto_board.read())
+    print(moto_board.readline().decode(args.encoding))
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
