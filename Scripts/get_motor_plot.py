@@ -8,14 +8,26 @@ from time import sleep
 def set_pwm(left_pwm, right_pwm, moto_board, encoding):
     left_dir = 0 if left_pwm>=0 else 1
     right_dir = 0 if right_pwm>=0 else 1
-    left_pwm = abs(left_pwm)
-    right_pwm = abs(right_pwm)
-    moto_board.write('>{left_dir}#{left_pwm}#{right_pwm}#{right_dir}'.encode(encoding))
+    left_pwm = int(abs(left_pwm))
+    right_pwm = int(abs(right_pwm))
+    cmd = f'>{left_dir}#{left_pwm}#{right_pwm}#{right_dir}' 
+    print(cmd)
+    moto_board.write(cmd.encode(encoding))
+    sleep(1)
+    moto_board.write(cmd.encode(encoding))
+    sleep(1)
+    moto_board.write(cmd.encode(encoding))
+    sleep(1)
+    moto_board.write(cmd.encode(encoding))
+    sleep(1)
+
 
 
 def get_encoder_readouts(moto_board, encoding, readout_count, delay):
     left_readout = 0.0
     right_readout = 0.0
+    moto_board.write('>{left_dir}#{left_pwm}#{right_pwm}#{right_dir}'.encode(encoding))
+    sleep(1)
     readouts = 0
     print('Starting encoder readout.')
     for i in range(readout_count):
@@ -64,9 +76,11 @@ def main(args):
     print(moto_board.readline().decode(args.encoding))
     print('Initializing motors')
     set_pwm(125,125,moto_board,args.encoding)
+    sleep(1)
     left, right = get_encoder_readouts(moto_board, args.encoding,
             args.readout_count, args.readout_delay)
     print(f'{left} {right}')
+    set_pwm(0,0,moto_board,args.encoding)
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
