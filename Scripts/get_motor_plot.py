@@ -26,7 +26,6 @@ def set_pwm(left_pwm, right_pwm, moto_board, encoding):
 def get_encoder_readouts(moto_board, encoding, readout_count, delay):
     left_readout = 0.0
     right_readout = 0.0
-    moto_board.write('>{left_dir}#{left_pwm}#{right_pwm}#{right_dir}'.encode(encoding))
     sleep(1)
     readouts = 0
     print('Starting encoder readout.')
