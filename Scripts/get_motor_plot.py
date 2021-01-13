@@ -64,6 +64,16 @@ def interactive_port_selection():
         print(f'No port at number {choice}')
         return None
 
+def get_readout(pwm, lock_left, lock_right, moto_board, encoding, count, delay):
+    pwm_left = 0 if lock_left else pwm
+    pwm_right = 0 if lock_right else pwm
+    set_pwm(pwm_left,pwm_right,moto_board,encoding)
+    sleep(3)
+    left, right = get_encoder_readouts(moto_board, encoding, count, delay)
+    return left, right
+
+    
+
 def main(args):
     if args.port is None:
         args.port = interactive_port_selection()
@@ -71,14 +81,21 @@ def main(args):
         return
     moto_board = serial.Serial(args.port, args.baudrate, timeout=args.timeout)
     sleep(2)
-    moto_board.write(bytes('<', args.encoding))
-    print(moto_board.readline().decode(args.encoding))
-    print('Initializing motors')
-    set_pwm(125,125,moto_board,args.encoding)
-    sleep(1)
-    left, right = get_encoder_readouts(moto_board, args.encoding,
-            args.readout_count, args.readout_delay)
-    print(f'{left} {right}')
+    motor_pwm = []
+    encoder_left = []
+    encoder_right = []
+    set_pwm(160,160,moto_board,args.encoding) # To avoid stall conditions
+    lock_left = False
+    lock_right = False
+    for pwm in reversed(range(0,255,1)):
+        left, right = get_readout(pwm,lock_left,lock_right,moto_board,
+                args.encoding,args.readout_count,args.readout_delay)
+        lock_left = left==0
+        lock_right = right==0
+        motor_pwm.append(pwm)
+        encoder_left.append(left)
+        encoder_right.append(right)
+        print(f'{pwm} --->  {left}  {right}')
     set_pwm(0,0,moto_board,args.encoding)
 
 def parse_arguments():
