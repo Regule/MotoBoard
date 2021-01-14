@@ -87,7 +87,7 @@ def main(args):
     set_pwm(160,160,moto_board,args.encoding) # To avoid stall conditions
     lock_left = False
     lock_right = False
-    for pwm in reversed(range(0,255,1)):
+    for pwm in reversed(range(0,256,1)):
         left, right = get_readout(pwm,lock_left,lock_right,moto_board,
                 args.encoding,args.readout_count,args.readout_delay)
         lock_left = left==0
@@ -97,6 +97,19 @@ def main(args):
         encoder_right.append(right)
         print(f'{pwm} --->  {left}  {right}')
     set_pwm(0,0,moto_board,args.encoding)
+    sleep(2)
+    set(pwm(-160,-160,moto_board,args.encoding))
+    lock_left=False
+    lock_right=False
+    for pwm in range(-255,1):
+        left, right = get_readout(pwm,lock_left,lock_right,moto_board,
+                args.encoding,args.readout_count,args.readout_delay)
+        lock_left = left==0
+        lock_right = right==0
+        motor_pwm.append(pwm)
+        encoder_left.append(left)
+        encoder_right.append(right)
+        print(f'{pwm} --->  {left}  {right}')
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
