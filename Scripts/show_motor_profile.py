@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 
 def main(args):
     dataset = pd.read_csv(args.input_file)
-    pwm = pd['pwm'].to_numpy()
-    left = pd['left'].to_numpy()
-    right = pd['right'].to_numpy()
+    pwm = dataset['pwm'].to_numpy()
+    left = dataset['left'].to_numpy()
+    right = dataset['right'].to_numpy()
     plt.plot(pwm, left)
     plt.plot(pwm, right)
     plt.show()
@@ -19,4 +19,4 @@ def parse_arguments():
     return parser.parse_args()
 
 if __name__ == '__main__':
-    main(parse_arguments)
+    main(parse_arguments())

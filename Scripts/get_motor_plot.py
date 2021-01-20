@@ -88,17 +88,25 @@ def main(args):
     lock_left = False
     lock_right = False
     for pwm in reversed(range(0,256,1)):
-        left, right = get_readout(pwm,lock_left,lock_right,moto_board,
-                args.encoding,args.readout_count,args.readout_delay)
-        lock_left = left==0
-        lock_right = right==0
-        motor_pwm.append(pwm)
-        encoder_left.append(left)
-        encoder_right.append(right)
-        print(f'{pwm} --->  {left}  {right}')
+        if lock_left and lock_right:
+            motor_pwm.append(pwm)
+            encoder_left.append(0.0)
+            encoder_right.append(0.0)
+            print(f'{pwm} --->  {left}  {right} (LOCK MODE)')
+        else:
+            left, right = get_readout(pwm,lock_left,lock_right,moto_board,
+                    args.encoding,args.readout_count,args.readout_delay)
+            lock_left = left==0
+            lock_right = right==0
+            motor_pwm.append(pwm)
+            encoder_left.append(left)
+            encoder_right.append(right)
+            print(f'{pwm} --->  {left}  {right}')
+            if lock_left and lock_right:
+                set_pwm(0,0,moto_board,args.encoding)
     set_pwm(0,0,moto_board,args.encoding)
     sleep(2)
-    set(pwm(-160,-160,moto_board,args.encoding))
+    set_pwm(-160,-160,moto_board,args.encoding)
     lock_left=False
     lock_right=False
     for pwm in range(-255,1):
@@ -110,6 +118,8 @@ def main(args):
         encoder_left.append(left)
         encoder_right.append(right)
         print(f'{pwm} --->  {left}  {right}')
+        if lock_left and lock_right:
+            set_pwm(0,0,moto_board,args.encoding)
     data = pd.DataFrame({'pwm':motor_pwm, 'left':encoder_left, 'right':encoder_right})
     data.to_csv('output.csv')
 
