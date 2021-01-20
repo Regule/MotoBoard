@@ -10,7 +10,7 @@ def set_pwm(left_pwm, right_pwm, moto_board, encoding):
     right_dir = 0 if right_pwm>=0 else 1
     left_pwm = int(abs(left_pwm))
     right_pwm = int(abs(right_pwm))
-    cmd = f'>{left_dir}#{left_pwm}#{right_pwm}#{right_dir}' 
+    cmd = f'>{left_dir}#{left_pwm}#{right_dir}#{right_pwm}' 
     print(cmd)
     moto_board.write(cmd.encode(encoding))
     sleep(1)
@@ -110,6 +110,8 @@ def main(args):
         encoder_left.append(left)
         encoder_right.append(right)
         print(f'{pwm} --->  {left}  {right}')
+    data = pd.DataFrame({'pwm':motor_pwm, 'left':encoder_left, 'right':encoder_right})
+    data.to_csv('output.csv')
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
